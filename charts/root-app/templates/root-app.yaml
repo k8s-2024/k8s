@@ -9,7 +9,7 @@ spec:
   source:
     repoURL: https://github.com/k8s-2024/k8s.git
     path: charts/root-app/
-    targetRevision: HEAD
+    targetRevision: helm
   destination:
     server: https://kubernetes.default.svc
     namespace: default
