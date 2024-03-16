@@ -1,0 +1,113 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: nginx-files
+data:
+  index.html: |
+   <h1>Welcome to the root page 1</h1>
+
+---
+
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: service-nginx-config
+data:
+  nginx.conf: |
+    user  nginx;
+    worker_processes  1;
+    error_log  /var/log/nginx/error.log warn;
+    pid        /var/run/nginx.pid;
+    events {
+        worker_connections  1024;
+    }
+
+    http {
+        sendfile        on;
+        server {
+          listen       80;
+          server_name  localhost;
+
+          location / {
+              root   /usr/share/nginx/html;
+              index  index.html index.htm;
+          }
+
+          error_page 404 /404.html;
+          error_page   500 502 503 504  /50x.html;
+          location = /50x.html {
+              root   /usr/share/nginx/html;
+          }
+        }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name:  nginx
+  labels:
+    app:  nginx
+spec:
+  selector:
+    matchLabels:
+      app: nginx
+  replicas: 1
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app:  nginx
+    spec:
+      # initContainers:
+        # Init containers are exactly like regular containers, except:
+          # - Init containers always run to completion.
+          # - Each init container must complete successfully before the next one starts.
+      containers:
+      - name:  nginx
+        image:  nginx:latest
+        resources:
+          requests:
+            cpu: 100m
+            memory: 100Mi
+          limits:
+            cpu: 100m
+            memory: 100Mi
+        ports:
+        - containerPort:  80
+          name:  nginx
+        volumeMounts:
+        - name: index
+          mountPath: "/usr/share/nginx/html/"
+        - name: config
+          mountPath: "/etc/nginx/"
+      volumes:
+        - name: index
+          configMap:
+            name: nginx-files
+        - name: config
+          configMap:
+            name: service-nginx-config
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx
+spec:
+  selector:
+    app: nginx
+  type: NodePort
+  sessionAffinity: None
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 10800
+  ports:
+  - name: nginx
+    protocol: TCP
+    port: 80
+    targetPort: 80
+    nodePort: 30080
