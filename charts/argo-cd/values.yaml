@@ -1,0 +1,11 @@
+argo-cd: #To override the chart values of a dependency, we have to place them under the dependency name. Since our dependency in the Chart.yaml is called argo-cd, we have to place our values under the argo-cd: key. If the dependency name would be abcd, we'd place the values under the abcd: key.
+  dex:
+    enabled: false
+  notifications:
+    enabled: false
+  applicationSet:
+    enabled: false
+  server:
+    extraArgs:
+      - --insecure
+
